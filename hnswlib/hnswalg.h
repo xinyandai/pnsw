@@ -113,7 +113,7 @@ namespace hnswlib {
         tableint enterpoint_node_;
 
 
-
+        size_t dist_calc;
         size_t size_links_level0_;
         size_t offsetData_, offsetLevel0_;
 
@@ -160,6 +160,7 @@ namespace hnswlib {
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidateSet;
             dist_t dist = fstdistfunc_(data_point, getDataByInternalId(enterpoint_id), dist_func_param_);
+            dist_calc++;
 
             top_candidates.emplace(dist, enterpoint_id);
             candidateSet.emplace(-dist, enterpoint_id);
@@ -204,6 +205,8 @@ namespace hnswlib {
                     char *currObj1 = (getDataByInternalId(candidate_id));
 
                     dist_t dist1 = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                    dist_calc++;
+
                     if (top_candidates.top().first > dist1 || top_candidates.size() < ef_construction_) {
                         candidateSet.emplace(-dist1, candidate_id);
         #ifdef USE_SSE
@@ -223,7 +226,7 @@ namespace hnswlib {
         }
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
-        searchBaseLayerST(tableint ep_id, const void *data_point, size_t ef) const {
+        searchBaseLayerST(tableint ep_id, const void *data_point, size_t ef)  {
             VisitedList *vl = visited_list_pool_->getFreeVisitedList();
             vl_type *visited_array = vl->mass;
             vl_type visited_array_tag = vl->curV;
@@ -231,6 +234,7 @@ namespace hnswlib {
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidate_set;
             dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+            dist_calc++;
 
             top_candidates.emplace(dist, ep_id);
             candidate_set.emplace(-dist, ep_id);
@@ -269,6 +273,7 @@ namespace hnswlib {
 
                         char *currObj1 = (getDataByInternalId(candidate_id));
                         dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                        dist_calc++;
 
                         if (top_candidates.top().first > dist || top_candidates.size() < ef) {
                             candidate_set.emplace(-dist, candidate_id);
@@ -318,6 +323,7 @@ namespace hnswlib {
                             fstdistfunc_(getDataByInternalId(second_pair.second),
                                          getDataByInternalId(curent_pair.second),
                                          dist_func_param_);;
+                                         dist_calc++;
                     if (curdist < dist_to_query) {
                         good = false;
                         break;
@@ -416,6 +422,7 @@ namespace hnswlib {
                     // finding the "weakest" element to replace it with the new one
                     dist_t d_max = fstdistfunc_(getDataByInternalId(cur_c), getDataByInternalId(selectedNeighbors[idx]),
                                                 dist_func_param_);
+                    dist_calc++;
                     // Heuristic:
                     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidates;
                     candidates.emplace(d_max, cur_c);
@@ -424,6 +431,7 @@ namespace hnswlib {
                         candidates.emplace(
                                 fstdistfunc_(getDataByInternalId(data[j]), getDataByInternalId(selectedNeighbors[idx]),
                                              dist_func_param_), data[j]);
+                        dist_calc++;
                     }
 
                     getNeighborsByHeuristic2(candidates, Mcurmax);
@@ -439,6 +447,7 @@ namespace hnswlib {
                     /*int indx = -1;
                     for (int j = 0; j < sz_link_list_other; j++) {
                         dist_t d = fstdistfunc_(getDataByInternalId(data[j]), getDataByInternalId(rez[idx]), dist_func_param_);
+                        dist_calc++;
                         if (d > d_max) {
                             indx = j;
                             d_max = d;
@@ -463,6 +472,7 @@ namespace hnswlib {
         std::priority_queue<std::pair<dist_t, tableint>> searchKnnInternal(void *query_data, int k) {
             tableint currObj = enterpoint_node_;
             dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+            dist_calc++;
 
             for (size_t level = maxlevel_; level > 0; level--) {
                 bool changed = true;
@@ -477,6 +487,7 @@ namespace hnswlib {
                         if (cand < 0 || cand > max_elements_)
                             throw std::runtime_error("cand error");
                         dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                        dist_calc++;
 
                         if (d < curdist) {
                             curdist = d;
@@ -702,6 +713,7 @@ namespace hnswlib {
                 if (curlevel < maxlevelcopy) {
 
                     dist_t curdist = fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
+                    dist_calc++;
                     for (int level = maxlevelcopy; level > curlevel; level--) {
 
 
@@ -718,6 +730,7 @@ namespace hnswlib {
                                 if (cand < 0 || cand > max_elements_)
                                     throw std::runtime_error("cand error");
                                 dist_t d = fstdistfunc_(data_point, getDataByInternalId(cand), dist_func_param_);
+                                dist_calc++;
                                 if (d < curdist) {
                                     curdist = d;
                                     currObj = cand;
@@ -753,9 +766,10 @@ namespace hnswlib {
             return cur_c;
         };
 
-        std::priority_queue<std::pair<dist_t, labeltype >> searchKnn(const void *query_data, size_t k) const {
+        std::priority_queue<std::pair<dist_t, labeltype >> searchKnn(const void *query_data, size_t k)  {
             tableint currObj = enterpoint_node_;
             dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+            dist_calc++;
 
             for (int level = maxlevel_; level > 0; level--) {
                 bool changed = true;
@@ -770,6 +784,7 @@ namespace hnswlib {
                         if (cand < 0 || cand > max_elements_)
                             throw std::runtime_error("cand error");
                         dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                        dist_calc++;
 
                         if (d < curdist) {
                             curdist = d;

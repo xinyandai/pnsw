@@ -103,12 +103,14 @@ test_vs_recall(DataType *massQ, size_t qsize, HierarchicalNSW<DistType > &appr_a
 
     for (size_t ef : efs) {
         appr_alg.setEf(ef);
+        appr_alg.dist_calc = 0;
         StopW stopw = StopW();
 
         float recall = test_approx(massQ, qsize, appr_alg, vecdim, answers, k);
         float time_us_per_query = stopw.getElapsedTimeMicro() / qsize;
 
-        cout << ef << "\t" << recall << "\t" << time_us_per_query << " us\n";
+//        cout << ef << "\t" << appr_alg.dist_calc / qsize << "\t" << recall << "\t" << time_us_per_query << " us\n";
+        cout << appr_alg.dist_calc / qsize << ", \t" << time_us_per_query << ", \t" << recall << ", \t" << ef <<"\n";
         if (recall > 1.0) {
             cout << recall << "\t" << time_us_per_query << " us\n";
             break;
