@@ -9,12 +9,13 @@
 #include "rss.hpp"
 #include "recall.hpp"
 #include "hnswlib/hnswlib.h"
+#include "hnswlib/pnswlib.h"
 
 using namespace std;
 using namespace hnswlib;
 
-template <typename DistType>
-void inDegree(HierarchicalNSW<DistType> *appr_alg, float *x, int vecsize, int vecdim) {
+template <typename NSW>
+void inDegree(NSW *appr_alg, float *x, int vecsize, int vecdim) {
   std::vector<float> element_norms;
   element_norms.reserve(vecsize);
   for (int i = 0; i < vecsize; ++i) {
@@ -91,18 +92,21 @@ void loadData(DataType*& data, size_t& dimension, size_t & cardinality, const st
 using namespace std;
 using namespace hnswlib;
 
-
+template < typename DistType, class NSW,class DistSpace>
 void run_hnsw(int argc, char** argv);
 
 int main(int argc, char** argv) {
-  run_hnsw(argc, argv);
+  using DistType = float;
+  using DistSpace = L2Space;
+  run_hnsw<DistType, ProbabilisticNSW<DistType >, DistSpace>(argc, argv);
+  run_hnsw<DistType, HierarchicalNSW<DistType >, DistSpace>(argc, argv);
 }
 
+template < typename DistType, class NSW,class DistSpace>
 void run_hnsw(int argc, char** argv) {
-  using DistType = float;
-  using DistSpace = InnerProductSpace;
-  int efConstruction = 1024;
-  int M = 32;
+
+  int efConstruction = 128;
+  int M = 16;
   const char *path_index;
   const char *path_x;
   const char *path_q;
@@ -129,14 +133,14 @@ void run_hnsw(int argc, char** argv) {
 
   DistSpace l2space(vecdim);
 
-  HierarchicalNSW<DistType > *appr_alg;
+  NSW *appr_alg;
   if (exists_test(path_index)) {
     cout << "Loading index from " << path_index << ":\n";
-    appr_alg = new HierarchicalNSW<DistType >(&l2space, path_index, false);
+    appr_alg = new NSW(&l2space, path_index, false);
     cout << "Actual memory usage: " << getCurrentRSS() / 1000000 << " Mb \n";
   } else {
     cout << "Building index:\n";
-    appr_alg = new HierarchicalNSW<DistType >(&l2space, vecsize, M, efConstruction);
+    appr_alg = new NSW(&l2space, vecsize, M, efConstruction);
 
     appr_alg->addPoint((void *) (x), (size_t) 0);
     int j1 = 0;
