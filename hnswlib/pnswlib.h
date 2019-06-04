@@ -40,23 +40,23 @@ class ProbabilisticNSW : public HierarchicalNSW<dist_t> {
     vl_type visited_array_tag = vl->curV;
 
     PriorityQueue top_candidates;
-    ProbPriorityQueue<tableint, dist_t> candidate_set;
+    ProbPriorityQueue<std::pair<dist_t, tableint>, double> candidate_set;
     dist_t dist = this->fstdistfunc_(data_point, this->getDataByInternalId(ep_id), this->dist_func_param_);
     this->dist_calc++;
 
     top_candidates.emplace(dist, ep_id);
-    candidate_set.emplace(-dist, ep_id);
+    candidate_set.emplace(std::pow(2.0, -dist), std::make_pair(-dist, ep_id));
     visited_array[ep_id] = visited_array_tag;
     dist_t lower_bound = dist;
 
     while (!candidate_set.empty()) {
 
-      std::pair<dist_t, tableint> current_node_pair = candidate_set.pop();
-/*
-      if ((-current_node_pair.first) > lower_bound) {
+      if ((-candidate_set.top().first) > lower_bound) {
         break;
       }
-*/
+
+      std::pair<dist_t, tableint> current_node_pair = candidate_set.pop();
+
       tableint current_node_id = current_node_pair.second;
       int *data = (int *) (this->data_level0_memory_ + current_node_id * this->size_data_per_element_ + this->offsetLevel0_);
       int size = *data;
@@ -83,7 +83,7 @@ class ProbabilisticNSW : public HierarchicalNSW<dist_t> {
           this->dist_calc++;
 
           if (top_candidates.top().first > dist || top_candidates.size() < ef) {
-            candidate_set.emplace(-dist, candidate_id);
+            candidate_set.emplace(std::pow(2.0, -dist), std::make_pair(-dist, candidate_id));
             top_candidates.emplace(dist, candidate_id);
 
             if (top_candidates.size() > ef) {

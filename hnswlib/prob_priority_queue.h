@@ -32,23 +32,30 @@ class ProbPriorityQueue {
    * randomly pop one element according to its probability priority
    * @return
    */
-  std::pair<ProbType, T > pop() {
+  T pop() {
     ProbType r = uniformRealDistribution<ProbType >(prob_norm_);
     for (auto iter = queue_.begin(); iter!=queue_.end(); iter++) {
       if (r <= iter->first || iter+1 == queue_.end()) {
         prob_norm_ -= iter->first;
-        std::pair<ProbType, T > re = *iter;
-        re.first = std::log2(re.first);
+        T re = iter->second;
         queue_.erase(iter, iter+1);
         return re;
       } else {
-      
         r -= iter->first;
       }
     }
     throw std::runtime_error("probability overflow");
   }
-  
+  std::pair<ProbType, T >& top() {
+    int best_i = 0;
+    for (int i=1; i<queue_.size(); i++) {
+      if (queue_[i].first > queue_[best_i].first) {
+        best_i = i;
+      }
+    }
+    return queue_[best_i];
+
+  }
   /*
   std::pair<ProbType, T > pop() {
     int best_i = 0;
@@ -60,11 +67,10 @@ class ProbPriorityQueue {
     std::pair<ProbType, T > re = queue_[best_i];
     queue_.erase(queue_.begin() + best_i);
     return re;
-    
+
   }
   */
-  T emplace(ProbType prob, const T &obj) {
-    prob = std::pow(2.0, prob);
+  void emplace(ProbType prob, const T &obj) {
     prob_norm_ += prob;
     queue_.push_back(std::make_pair(prob, obj));
   }
